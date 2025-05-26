@@ -59,5 +59,5 @@ async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user
     return FileResponse(
         path=zip_file_path,
         media_type="application/zip",
-        filename="ipe_combined.zip"
+        filename="ipe.zip"
     )
