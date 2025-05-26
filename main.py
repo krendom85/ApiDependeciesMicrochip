@@ -1,6 +1,6 @@
 import os
-import zipfile  # Cambiado de shutil a zipfile
-from fastapi import FastAPI, Depends, HTTPException, status
+import zipfile
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,15 +30,20 @@ def authenticate_user(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials
 
+def delete_file(file_path: str):
+    """Elimina el archivo especificado."""
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
 @app.get("/download-dependecies/")
-async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user)):
+async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user), background_tasks: BackgroundTasks = None):
     # Archivos a incluir en el .zip
     files = ["static/ipe.zip", "static/ipe.z01"]
     zip_file_path = "static/ipe_combined.zip"
 
     # Crear un archivo .zip temporal
     try:
-        with zipfile.ZipFile(zip_file_path, "w") as zipf:  # Cambiado a zipfile.ZipFile
+        with zipfile.ZipFile(zip_file_path, "w") as zipf:
             for file in files:
                 if os.path.exists(file):
                     zipf.write(file, os.path.basename(file))
@@ -46,6 +51,9 @@ async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user
                     raise HTTPException(status_code=404, detail=f"Archivo {file} no encontrado")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear el archivo .zip: {str(e)}")
+
+    # Agregar tarea en segundo plano para eliminar el archivo después de la descarga
+    background_tasks.add_task(delete_file, zip_file_path)
 
     # Enviar el archivo .zip como respuesta
     return FileResponse(
