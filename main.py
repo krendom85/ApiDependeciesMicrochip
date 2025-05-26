@@ -39,7 +39,7 @@ def delete_file(file_path: str):
 async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user), background_tasks: BackgroundTasks = None):
     # Archivos a incluir en el .zip
     files = ["static/ipe.zip", "static/ipe.z01"]
-    zip_file_path = "static/ipe_combined.zip"
+    zip_file_path = "/tmp/ipe.zip"  # Cambiado a /tmp
 
     # Crear un archivo .zip temporal
     try:
