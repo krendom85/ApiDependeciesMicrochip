@@ -1,5 +1,6 @@
 import os
 import zipfile
+import subprocess
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
@@ -35,27 +36,27 @@ def delete_file(file_path: str):
     if os.path.exists(file_path):
         os.remove(file_path)
 
+
+def fetch_file_from_git_lfs(file_path: str):
+    try:
+        subprocess.run(["git", "lfs", "pull"], check=True)
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"Archivo {file_path} no encontrado en Git LFS")
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"Error al descargar el archivo desde Git LFS: {str(e)}")
+
 @app.get("/download-dependecies/")
 async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user), background_tasks: BackgroundTasks = None):
 
-    files = ["static/ipecmd.zip", "static/ipecmd.z01","static/ipecmd.z02","static/ipecmd.z03","static/ipecmd.z04"]
-    zip_file_path = "/tmp/ipe_complete.zip"  
-
-  
-    try:
-        with zipfile.ZipFile(zip_file_path, "w") as zipf:
-            for file in files:
-                if os.path.exists(file):
-                    zipf.write(file, os.path.basename(file))
-                else:
-                    raise HTTPException(status_code=404, detail=f"Archivo {file} no encontrado")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al crear el archivo .zip: {str(e)}")
-
-    background_tasks.add_task(delete_file, zip_file_path)
+    lfs_file_path = "static/ipe.zip"
+    fetch_file_from_git_lfs(lfs_file_path)
+    if not os.path.exists(lfs_file_path):
+        raise HTTPException(status_code=404, detail="Archivo ipe.zip no encontrado")
+    
+    background_tasks.add_task(delete_file, lfs_file_path)
 
     return FileResponse(
-        path=zip_file_path,
+        path=lfs_file_path,
         media_type="application/zip",
-        filename="ipe_complete.zip"
+        filename="ipe.zip"
     )
