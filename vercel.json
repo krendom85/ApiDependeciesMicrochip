@@ -11,8 +11,5 @@
       "src": "/(.*)",
       "dest": "main.py"
     }
-  ],
-    "staticFiles": {
-    "static/ipe.zip": "static/ipe.zip"
-  }
+  ]
 }
