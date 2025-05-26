@@ -46,7 +46,7 @@ async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user
     if response.status_code != 200:
         raise HTTPException(status_code=404, detail="Archivo ipe.zip no encontrado en GitHub")
 
-    temp_file_path = "ipe.zip"
+    temp_file_path = "/tmp/ipe.zip"
     with open(temp_file_path, "wb") as f:
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
