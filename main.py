@@ -1,6 +1,5 @@
 import os
-import zipfile
-import subprocess
+import requests
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
@@ -37,26 +36,23 @@ def delete_file(file_path: str):
         os.remove(file_path)
 
 
-def fetch_file_from_git_lfs(file_path: str):
-    try:
-        subprocess.run(["git", "lfs", "pull"], check=True)
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail=f"Archivo {file_path} no encontrado en Git LFS")
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Error al descargar el archivo desde Git LFS: {str(e)}")
 
 @app.get("/download-dependecies/")
 async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user), background_tasks: BackgroundTasks = None):
 
-    lfs_file_path = "static/ipe.zip"
-    fetch_file_from_git_lfs(lfs_file_path)
-    if not os.path.exists(lfs_file_path):
-        raise HTTPException(status_code=404, detail="Archivo ipe.zip no encontrado")
-    
-    background_tasks.add_task(delete_file, lfs_file_path)
+    github_file_url = "https://media.githubusercontent.com/media/krendom85/ApiDependeciesMicrochip/main/static/ipe.zip"
+
+    response = requests.get(github_file_url, stream=True)
+    if response.status_code != 200:
+        raise HTTPException(status_code=404, detail="Archivo ipe.zip no encontrado en GitHub")
+
+    temp_file_path = "ipe.zip"
+    with open(temp_file_path, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            f.write(chunk)
 
     return FileResponse(
-        path=lfs_file_path,
+        path=temp_file_path,
         media_type="application/zip",
         filename="ipe.zip"
     )
