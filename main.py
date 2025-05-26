@@ -37,11 +37,11 @@ def delete_file(file_path: str):
 
 @app.get("/download-dependecies/")
 async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user), background_tasks: BackgroundTasks = None):
-    # Archivos a incluir en el .zip
-    files = ["static/ipe.zip", "static/ipe.z01"]
-    zip_file_path = "/tmp/ipe.zip"  # Cambiado a /tmp
 
-    # Crear un archivo .zip temporal
+    files = ["static/ipecmd.zip", "static/ipecmd.z01","static/ipecmd.z02","static/ipecmd.z03","static/ipecmd.z04"]
+    zip_file_path = "/tmp/ipe_complete.zip"  
+
+  
     try:
         with zipfile.ZipFile(zip_file_path, "w") as zipf:
             for file in files:
@@ -52,12 +52,10 @@ async def download(credentials: HTTPBasicCredentials = Depends(authenticate_user
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear el archivo .zip: {str(e)}")
 
-    # Agregar tarea en segundo plano para eliminar el archivo después de la descarga
     background_tasks.add_task(delete_file, zip_file_path)
 
-    # Enviar el archivo .zip como respuesta
     return FileResponse(
         path=zip_file_path,
         media_type="application/zip",
-        filename="ipe.zip"
+        filename="ipe_complete.zip"
     )
